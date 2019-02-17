@@ -143,6 +143,30 @@ class ETreeXMLSchemaTestCase(HelperTestCase):
         self.assertRaises(etree.XMLSyntaxError,
                           self.parse, '<a><c></c></a>', parser=parser)
 
+    def test_xmlschema_parser_ctx_from_arg(self):
+        # TODO: use the dummy webserver to provide a schema to import
+        schema = self.parse('''
+        <xs:schema
+          xmlns:xs="http://www.w3.org/2001/XMLSchema"
+          elementFormDefault="qualified"
+          attributeFormDefault="unqualified">
+          <xs:import namespace="http://www.w3.org/1999/xlink"
+            schemaLocation="http://www.loc.gov/standards/xlink/xlink.xsd"
+            />
+        </xs:schema>
+        ''')
+        parser = etree.XMLParser(no_network=True)
+        # self.assertRaises(etree.XMLSchemaParseError,
+        #                   etree.XMLSchema, schema, parser=parser)
+        parsed = etree.XMLSchema(etree=schema, parser=parser)
+        self.assertTrue(len(parsed.error_log) == 1,
+                        'There should be an error_log._LogEntry showing the'
+                        ' schema\nparser context respected the parser argument'
+                        ' and could not perform the import')
+
+    def test_xmlschema_parser_manages_includes(self):
+        schema = ''
+
     def test_xmlschema_parse_default_attributes(self):
         # does not work as of libxml2 2.7.3
         schema = self.parse('''
@@ -412,7 +436,7 @@ class ETreeXMLSchemaResolversTestCase(HelperTestCase):
     <xsd:complexType name="AType">
       <xsd:sequence><xsd:element name="b" type="xsd:string" minOccurs="0" maxOccurs="unbounded" /></xsd:sequence>
     </xsd:complexType>
-</xsd:schema>""" 
+</xsd:schema>"""
 
     class simple_resolver(etree.Resolver):
         def __init__(self, schema):
